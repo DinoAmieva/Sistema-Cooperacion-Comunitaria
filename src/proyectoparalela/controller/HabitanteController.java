@@ -8,41 +8,29 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Controlador para manejar la lógica de negocio relacionada con Habitantes
- * Actúa como intermediario entre la vista y el DAO
- * Implementa el patrón MVC (Model-View-Controller)
- */
 public class HabitanteController {
-    // DAO para acceso a datos
+    
     private final HabitanteDAO dao;
-    // Sistema de notificaciones para comunicación con la vista
     private final Observable<String> notifier;
 
-    /**
-     * Constructor del controlador
-     * @param dao DAO para acceso a datos de habitantes
-     * @param notifier Sistema de notificaciones
-     */
     public HabitanteController(HabitanteDAO dao, Observable<String> notifier) {
         this.dao = dao;
         this.notifier = notifier;
     }
 
     /**
-     * Crea un nuevo habitante en el sistema
-     * @param nombre Nombre del habitante
-     * @param apellido Apellido del habitante
-     * @param edad Edad del habitante (puede ser null)
-     * @param direccion Dirección del habitante
-     * @param telefono Teléfono del habitante
-     * @return ID del habitante creado
-     * @throws SQLException Si hay error en la operación de base de datos
+     * REFACTORIZADO: Acepta un objeto Habitante completo.
+     * Asigna la fecha de registro actual y lo pasa al DAO.
      */
-    public long crearHabitante(String nombre, String apellido, Integer edad, String direccion, String telefono) throws SQLException {
-        // Crear objeto Habitante con fecha actual
-        Habitante h = new Habitante(null, nombre, apellido, edad, direccion, telefono, LocalDate.now());
+    public long crearHabitante(Habitante h) throws SQLException {
+        // Asignar la fecha de registro al momento de la creación
+        h.setFechaRegistro(LocalDate.now());
+        
+        // ¡¡Seguridad!! Aquí deberías hashear la contraseña antes de guardarla
+        // Ejemplo: h.setPassword(BCrypt.hashpw(h.getPassword(), BCrypt.gensalt()));
+        
         long id = dao.crear(h);
+        
         // Notificar a la vista sobre la creación exitosa
         notifier.publish("Habitante creado: " + id);
         return id;
@@ -50,9 +38,6 @@ public class HabitanteController {
 
     /**
      * Obtiene un habitante por su ID
-     * @param id ID del habitante
-     * @return Objeto Habitante encontrado
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public Habitante obtener(long id) throws SQLException { 
         return dao.leer(id); 
@@ -60,11 +45,9 @@ public class HabitanteController {
     
     /**
      * Actualiza los datos de un habitante
-     * @param h Objeto Habitante con los datos actualizados
-     * @return true si la actualización fue exitosa
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public boolean actualizar(Habitante h) throws SQLException { 
+        // ¡¡Aquí también deberías verificar si la contraseña cambió y hashearla!!
         boolean ok = dao.actualizar(h); 
         if (ok) notifier.publish("Habitante actualizado: " + h.getId()); 
         return ok; 
@@ -72,9 +55,6 @@ public class HabitanteController {
     
     /**
      * Elimina un habitante del sistema
-     * @param id ID del habitante a eliminar
-     * @return true si la eliminación fue exitosa
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public boolean eliminar(long id) throws SQLException { 
         boolean ok = dao.eliminar(id); 
@@ -84,12 +64,23 @@ public class HabitanteController {
     
     /**
      * Obtiene todos los habitantes del sistema
-     * @return Lista de todos los habitantes
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public List<Habitante> listar() throws SQLException { 
         return dao.listarTodos(); 
     }
+
+    /**
+     * NUEVO: Método de Login
+     * Pasa las credenciales al DAO y notifica el resultado.
+     */
+    public Habitante login(String usuario, String password) throws SQLException {
+        Habitante habitante = dao.login(usuario, password);
+        
+        if (habitante != null) {
+            notifier.publish("Inicio de sesión exitoso: " + habitante.getNombre());
+        } else {
+            notifier.publish("Error: Usuario o contraseña incorrectos");
+        }
+        return habitante;
+    }
 }
-
-

@@ -1,4 +1,3 @@
-
 package proyectoparalela.dao;
 
 import proyectoparalela.db.DatabaseConnection;
@@ -9,35 +8,44 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Clase DAO (Data Access Object) para manejar operaciones de base de datos
- * relacionadas con la entidad Habitante
- * Implementa el patrón DAO para separar la lógica de acceso a datos
- */
 public class HabitanteDAO {
 
     /**
-     * Crea un nuevo habitante en la base de datos
-     * @param h Objeto Habitante con los datos a insertar
-     * @return ID del habitante creado, -1 si hay error
-     * @throws SQLException Si hay error en la operación de base de datos
+     * Crea un nuevo habitante en la base de datos con todos los campos.
      */
     public long crear(Habitante h) throws SQLException {
-        String sql = "INSERT INTO habitantes(nombre, apellido, edad, direccion, telefono, fecha_registro) VALUES(?,?,?,?,?,?)";
+        // SQL actualizado con TODOS los campos de la tabla
+        String sql = "INSERT INTO habitantes(nombre, apellido, edad, direccion, telefono, fecha_registro, " +
+                     "fecha_nacimiento, lugar_nacimiento, estado_civil, ocupacion, grado_estudios, " +
+                     "manzana, originario_almaya, certificado_comunero, tipo_certificado, " +
+                     "usuario, password) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        
         try (Connection c = DatabaseConnection.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            // Establecer parámetros del PreparedStatement
+            
+            // Establecer parámetros existentes
             ps.setString(1, h.getNombre());
             ps.setString(2, h.getApellido());
-            // Manejar valores nulos para edad
             if (h.getEdad() == null) ps.setNull(3, Types.INTEGER); else ps.setInt(3, h.getEdad());
             ps.setString(4, h.getDireccion());
             ps.setString(5, h.getTelefono());
-            // Convertir LocalDate a String para almacenar en SQLite
             ps.setString(6, h.getFechaRegistro() == null ? null : h.getFechaRegistro().toString());
+
+            // Establecer parámetros NUEVOS
+            ps.setString(7, h.getFechaNacimiento() == null ? null : h.getFechaNacimiento().toString());
+            ps.setString(8, h.getLugarNacimiento());
+            ps.setString(9, h.getEstadoCivil());
+            ps.setString(10, h.getOcupacion());
+            ps.setString(11, h.getGradoEstudios());
+            ps.setString(12, h.getManzana());
+            ps.setBoolean(13, h.isOriginarioAlmaya());
+            ps.setString(14, h.getCertificadoComunero());
+            ps.setString(15, h.getTipoCertificado());
+            ps.setString(16, h.getUsuario());
+            ps.setString(17, h.getPassword()); // ¡¡Ver nota de seguridad al final!!
+
             ps.executeUpdate();
             
-            // Obtener el ID generado automáticamente
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) return rs.getLong(1);
             }
@@ -47,9 +55,6 @@ public class HabitanteDAO {
 
     /**
      * Lee un habitante específico por su ID
-     * @param id ID del habitante a buscar
-     * @return Objeto Habitante encontrado, null si no existe
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public Habitante leer(long id) throws SQLException {
         String sql = "SELECT * FROM habitantes WHERE id = ?";
@@ -65,32 +70,43 @@ public class HabitanteDAO {
 
     /**
      * Actualiza los datos de un habitante existente
-     * @param h Objeto Habitante con los datos actualizados
-     * @return true si la actualización fue exitosa, false en caso contrario
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public boolean actualizar(Habitante h) throws SQLException {
-        String sql = "UPDATE habitantes SET nombre=?, apellido=?, edad=?, direccion=?, telefono=?, fecha_registro=? WHERE id=?";
+        // SQL actualizado con TODOS los campos
+        String sql = "UPDATE habitantes SET nombre=?, apellido=?, edad=?, direccion=?, telefono=?, fecha_registro=?, " +
+                     "fecha_nacimiento=?, lugar_nacimiento=?, estado_civil=?, ocupacion=?, grado_estudios=?, " +
+                     "manzana=?, originario_almaya=?, certificado_comunero=?, tipo_certificado=?, " +
+                     "usuario=?, password=? WHERE id=?";
+        
         try (Connection c = DatabaseConnection.getInstance().getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            // Establecer parámetros del UPDATE
+            
+            // Establecer parámetros (17 campos + 1 id)
             ps.setString(1, h.getNombre());
             ps.setString(2, h.getApellido());
-            // Manejar valores nulos para edad
             if (h.getEdad() == null) ps.setNull(3, Types.INTEGER); else ps.setInt(3, h.getEdad());
             ps.setString(4, h.getDireccion());
             ps.setString(5, h.getTelefono());
             ps.setString(6, h.getFechaRegistro() == null ? null : h.getFechaRegistro().toString());
-            ps.setLong(7, h.getId());
+            ps.setString(7, h.getFechaNacimiento() == null ? null : h.getFechaNacimiento().toString());
+            ps.setString(8, h.getLugarNacimiento());
+            ps.setString(9, h.getEstadoCivil());
+            ps.setString(10, h.getOcupacion());
+            ps.setString(11, h.getGradoEstudios());
+            ps.setString(12, h.getManzana());
+            ps.setBoolean(13, h.isOriginarioAlmaya());
+            ps.setString(14, h.getCertificadoComunero());
+            ps.setString(15, h.getTipoCertificado());
+            ps.setString(16, h.getUsuario());
+            ps.setString(17, h.getPassword());
+            ps.setLong(18, h.getId()); // ID al final para el WHERE
+
             return ps.executeUpdate() > 0;
         }
     }
 
     /**
      * Elimina un habitante de la base de datos
-     * @param id ID del habitante a eliminar
-     * @return true si la eliminación fue exitosa, false en caso contrario
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public boolean eliminar(long id) throws SQLException {
         String sql = "DELETE FROM habitantes WHERE id = ?";
@@ -103,8 +119,6 @@ public class HabitanteDAO {
 
     /**
      * Obtiene todos los habitantes ordenados por ID descendente
-     * @return Lista de todos los habitantes
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public List<Habitante> listarTodos() throws SQLException {
         String sql = "SELECT * FROM habitantes ORDER BY id DESC";
@@ -119,9 +133,6 @@ public class HabitanteDAO {
 
     /**
      * Busca habitantes por nombre o apellido (búsqueda parcial)
-     * @param nombre Nombre o apellido a buscar
-     * @return Lista de habitantes que coinciden con la búsqueda
-     * @throws SQLException Si hay error en la operación de base de datos
      */
     public List<Habitante> buscarPorNombre(String nombre) throws SQLException {
         String sql = "SELECT * FROM habitantes WHERE nombre LIKE ? OR apellido LIKE ?";
@@ -139,29 +150,64 @@ public class HabitanteDAO {
     }
 
     /**
-     * Mapea un ResultSet a un objeto Habitante
-     * @param rs ResultSet con los datos de la base de datos
-     * @return Objeto Habitante mapeado
-     * @throws SQLException Si hay error al leer los datos
+     * NUEVO: Método de Login
+     * Busca un habitante por usuario y contraseña.
+     */
+    public Habitante login(String usuario, String password) throws SQLException {
+        String sql = "SELECT * FROM habitantes WHERE usuario = ?";
+        try (Connection c = DatabaseConnection.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, usuario);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Habitante h = map(rs);
+
+                    // ¡¡¡ADVERTENCIA DE SEGURIDAD!!!
+                    // Esto es solo para pruebas. NUNCA almacenes contraseñas en texto plano.
+                    // En una aplicación real, deberías hashear la contraseña al crearla
+                    // y usar una biblioteca como jBCrypt para comparar el hash:
+                    // if (BCrypt.checkpw(password, h.getPassword())) { ... }
+                    
+                    if (h.getPassword() != null && h.getPassword().equals(password)) {
+                        return h;
+                    }
+                }
+            }
+        }
+        return null; // Devuelve null si el usuario no existe o la contraseña no coincide
+    }
+
+    /**
+     * Mapea un ResultSet a un objeto Habitante (ACTUALIZADO)
      */
     private Habitante map(ResultSet rs) throws SQLException {
         Habitante h = new Habitante();
+        
+        // Campos existentes
         h.setId(rs.getLong("id"));
         h.setNombre(rs.getString("nombre"));
         h.setApellido(rs.getString("apellido"));
-        
-        // Manejar edad nula
         int edad = rs.getInt("edad");
         if (!rs.wasNull()) h.setEdad(edad);
-        
         h.setDireccion(rs.getString("direccion"));
         h.setTelefono(rs.getString("telefono"));
-        
-        // Convertir String a LocalDate para fecha_registro
         String fr = rs.getString("fecha_registro");
         h.setFechaRegistro(fr == null ? null : LocalDate.parse(fr));
+
+        // Campos NUEVOS
+        String fn = rs.getString("fecha_nacimiento");
+        h.setFechaNacimiento(fn == null ? null : LocalDate.parse(fn));
+        h.setLugarNacimiento(rs.getString("lugar_nacimiento"));
+        h.setEstadoCivil(rs.getString("estado_civil"));
+        h.setOcupacion(rs.getString("ocupacion"));
+        h.setGradoEstudios(rs.getString("grado_estudios"));
+        h.setManzana(rs.getString("manzana"));
+        h.setOriginarioAlmaya(rs.getBoolean("originario_almaya"));
+        h.setCertificadoComunero(rs.getString("certificado_comunero"));
+        h.setTipoCertificado(rs.getString("tipo_certificado"));
+        h.setUsuario(rs.getString("usuario"));
+        h.setPassword(rs.getString("password"));
+        
         return h;
     }
 }
-
-

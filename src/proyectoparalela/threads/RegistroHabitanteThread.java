@@ -91,7 +91,16 @@ public class RegistroHabitanteThread implements Runnable {
                 
                 // Lógica simulada: alta automática de habitantes que cumplan 18 años
                 // En un sistema real, aquí se consultarían registros externos
-                Habitante h = new Habitante(null, "Nombre", "Apellido", 18, "Direccion", "", LocalDate.now());
+                // Usamos el constructor vacío y los setters
+                Habitante h = new Habitante();
+                    h.setNombre("NombreSimulado"); // Puedes cambiar "Nombre" por algo más descriptivo
+                    h.setApellido("ApellidoSimulado");
+                    h.setEdad(18);
+                    h.setDireccion("DireccionSimulada");
+                    h.setTelefono("");
+                    h.setFechaRegistro(LocalDate.now()); // El controlador también asigna esto, pero es bueno tenerlo
+                    h.setUsuario("usuario_simulado_" + System.currentTimeMillis()); // Usuario debe ser único
+                    h.setPassword("temp123"); // Contraseña temporal
                 
                 try {
                     // Crear el habitante en la base de datos
